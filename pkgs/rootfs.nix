@@ -123,7 +123,7 @@ runCommandNoCC "miyoomini-combined-rootfs" {
 
   mkdir -p $out
   (PS4=" $ "; set -x
-  mksquashfs rootfs $out/rootfs.img -quiet -comp xz -b $(( 1024 * 1024 )) -Xdict-size 100%
+  mksquashfs rootfs $out/rootfs.img -quiet -comp xz -b $(( 1024 * 1024 )) -Xdict-size 100% -all-root
   )
   ncdu -0x -o $out/rootfs.ncdu ./rootfs
   unsquashfs -quiet -ls $out/rootfs.img | sed -e 's/^squashfs-root//' > $out/rootfs.ls
