@@ -48,6 +48,7 @@ identifier).
 */
 
 { lib
+, requireFile
 , runCommandNoCC
 , unzip
 , squashfsTools
@@ -59,8 +60,17 @@ let
   inherit (lib) concatStringsSep;
 in
 runCommandNoCC "miyoomini-combined-rootfs" {
-  # XXX: provide the file with the thing that requires manually adding to the store.
-  zip = ./Miyoo-mini-upgrade20220419.zip;
+  zip = requireFile rec {
+    name = "Miyoo-mini-upgrade20220419.zip";
+    message = ''
+      Download the file from here: https://lemiyoo.cn/upgrade/675.html
+
+      Then use:
+
+       $ nix-prefetch-url file://\$PWD/${name}
+    '';
+    sha256 = "1yjc1r44jfv36wiahb1cknj3xwazy1flk6d29pkgk23digq5svi0";
+  };
   zip_firmware = "The firmware0419/miyoo283_fw.img";
 
   nativeBuildInputs = [

@@ -1,3 +1,8 @@
 { pkgs ? import <nixpkgs> {} }:
 
-pkgs.callPackage ./rootfs.nix {}
+let
+  self = {
+    rootfs = pkgs.callPackage ./pkgs/rootfs.nix {};
+  };
+in
+  self
