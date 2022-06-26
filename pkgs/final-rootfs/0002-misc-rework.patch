@@ -1,0 +1,429 @@
+From 63f1c2f38faf978c4ad8f5f4cb8af1cf21f22c25 Mon Sep 17 00:00:00 2001
+From: Samuel Dionne-Riel <samuel@dionne-riel.com>
+Date: Sat, 25 Jun 2022 21:52:16 -0400
+Subject: [PATCH 1/3] Drop all telnet refs
+
+---
+ etc/init.d/rcS | 2 --
+ etc/profile    | 1 -
+ 2 files changed, 3 deletions(-)
+
+diff --git a/etc/init.d/rcS b/etc/init.d/rcS
+index 513e725..bc1db01 100755
+--- a/etc/init.d/rcS
++++ b/etc/init.d/rcS
+@@ -8,5 +8,3 @@ mount devpts
+ echo /sbin/mdev > /proc/sys/kernel/hotplug
+ 
+ /sbin/mdev -s
+-
+-telnetd -l sh
+diff --git a/etc/profile b/etc/profile
+index 06a7c03..23a2765 100755
+--- a/etc/profile
++++ b/etc/profile
+@@ -15,7 +15,6 @@ mkdir -p /var/lock
+ 
+ mkdir -p /dev/pts
+ mount -t devpts devpts /dev/pts
+-busybox telnetd&
+ if [ -e /etc/core.sh ]; then
+     echo "|/etc/core.sh %p" > /proc/sys/kernel/core_pattern
+ chmod 777 /etc/core.sh
+-- 
+2.35.1
+
+
+From 2372871762fd3bdd0afa0cc4d291ff80a65fd176 Mon Sep 17 00:00:00 2001
+From: Samuel Dionne-Riel <samuel@dionne-riel.com>
+Date: Sat, 25 Jun 2022 21:54:21 -0400
+Subject: [PATCH 2/3] Drop init crap from /etc/profile
+
+---
+ etc/init.d/rcS | 16 ++++++++++++++++
+ etc/profile    | 19 ++++---------------
+ 2 files changed, 20 insertions(+), 15 deletions(-)
+
+diff --git a/etc/init.d/rcS b/etc/init.d/rcS
+index bc1db01..911203c 100755
+--- a/etc/init.d/rcS
++++ b/etc/init.d/rcS
+@@ -8,3 +8,19 @@ mount devpts
+ echo /sbin/mdev > /proc/sys/kernel/hotplug
+ 
+ /sbin/mdev -s
++
++# Misc init from the vendor.
++# Previously in `/etc/profile`.
++
++mount -t sysfs none /sys
++mount -t tmpfs mdev /dev
++mkdir -p /dev/pts
++mount -t devpts devpts /dev/pts
++mount -t debugfs none /sys/kernel/debug/
++mdev -s
++mkdir -p /var/lock
++
++if [ -e /etc/core.sh ]; then
++    echo "|/etc/core.sh %p" > /proc/sys/kernel/core_pattern
++	chmod 777 /etc/core.sh
++fi
+diff --git a/etc/profile b/etc/profile
+index 23a2765..f615623 100755
+--- a/etc/profile
++++ b/etc/profile
+@@ -1,24 +1,13 @@
+ #!/bin/sh
++
+ export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+ export LD_LIBRARY_PATH=/lib
+-mkdir -p /dev/pts
+-ulimit -c unlimited
+ export PATH=$PATH:/config:/customer/app
+ export TERMINFO=/config/terminfo
+ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/config/lib:/customer/lib
+-mkdir -p /dev/pts
+-mount -t sysfs none /sys
+-mount -t tmpfs mdev /dev
+-mount -t debugfs none /sys/kernel/debug/
+-mdev -s
+-mkdir -p /var/lock
+ 
+-mkdir -p /dev/pts
+-mount -t devpts devpts /dev/pts
+-if [ -e /etc/core.sh ]; then
+-    echo "|/etc/core.sh %p" > /proc/sys/kernel/core_pattern
+-chmod 777 /etc/core.sh
+-fi;
++ulimit -c unlimited
++
+ if [ -e /customer/demo.sh ]; then
+     /customer/demo.sh
+-fi;
++fi
+-- 
+2.35.1
+
+
+From 0ca925eaf60e068693a7500f2c127d63871440c7 Mon Sep 17 00:00:00 2001
+From: Samuel Dionne-Riel <samuel@dionne-riel.com>
+Date: Sat, 25 Jun 2022 21:54:50 -0400
+Subject: [PATCH 3/3] Drop UI crap from /etc/profile, and demo script
+
+inittab is where it should live anyway.
+---
+ customer/main                             | 227 +++++-----------------
+ customer/demo.sh => etc/init.d/modules.sh |   6 +-
+ etc/init.d/rcS                            |   2 +
+ etc/inittab                               |   7 +
+ etc/profile                               |   5 +-
+ 5 files changed, 61 insertions(+), 186 deletions(-)
+ rename customer/demo.sh => etc/init.d/modules.sh (97%)
+
+diff --git a/customer/main b/customer/main
+index dfb5077..37189b5 100755
+--- a/customer/main
++++ b/customer/main
+@@ -1,186 +1,55 @@
+ #!/bin/sh
+ 
+-#if ! [ -f /mnt/swapfile ] ; then
+-#dd if=/dev/zero of=/mnt/swapfile bs=1M count=64
+-#chmod 600 /mnt/swapfile
+-#mkswap /mnt/swapfile
+-#fi
++. /etc/profile
+ 
+-
+-#if  [ -f /mnt/swapfile ] ; then
+-#swapon /mnt/swapfile
+-#fi
+-
+-#echo 0 > /sys/class/graphics/fbcon/cursor_blink                                 
+-#echo 0 > /sys/class/vtconsole/vtcon1/bind
+-
+-#40->110
+-#tinymix set 6 40 
+ tinymix set 6 103 
+ 
+-echo 3 > /proc/sys/kernel/printk
+-
+-chmod a+x /usr/bin/notify
+-UPDATE_FILE_NAME=/tmp/.try_upgrade_file
+-UPDATE_TMP_DIR=/mnt/SDCARD/.tmp_update
+-UPDATE_LOG=/mnt/SDCARD/update.log
+-CUSTOMER_DIR=/mnt/SDCARD/miyoo/
+-
+-killprocess(){
+-   pid=`ps | grep $1 | grep -v grep | cut -d' ' -f3`
+-   kill -9 $pid
+-}
+-
+-init_lcd(){
+-   cat /proc/ls
+-   if [ $1 -ne 0 ] ; then
+-	sleep $1
+-   fi 
+-}
+-
+-runifnecessary(){
+-    a=`ps | grep $1 | grep -v grep`
+-    if [ "$a" == "" ] ; then
+-        $2 &
+-    fi
+-}
+-
+ echo 12 > /sys/class/gpio/unexport
+ 
+-#dump uboot env, not used anymore
+-#chmod a+x /etc/fw_printenv
+-#/etc/fw_printenv > /tmp/the_uboot_env
+-
+-#mv /mnt/SDCARD/update.scr /mnt/SDCARD/_update.scr
+-
+-audio_all_test -O -i /customer/app/sound/change.wav -D 0 -V -30 &
+-
+-while [ 1 ]; do
+-  if [ -f $UPDATE_FILE_NAME ] ; then
+-      upfile=`cat $UPDATE_FILE_NAME`
+-      if [ -f ${upfile} ] ; then
+-            echo start updating | tee $UPDATE_LOG
+-	    updateui >> $UPDATE_LOG &
+-            notify 0 extracting package
+-            mkdir -p ${UPDATE_TMP_DIR}
+-            total=`unzip -l ${upfile} | wc -l`            
+-	    unzip -d ${UPDATE_TMP_DIR} ${upfile} | awk -v total="$total" -v out="/tmp/.update_msg" 'function bname(file,a,n){n=split(file,a,"/")
+-;return a[n]}BEGIN{cnt=0}{printf "">out;cnt+=1;printf "%d extract %s\n",cnt*100/total,bname($2)>>out;close(out)}'
+-           if [ -f ${UPDATE_TMP_DIR}/updater ] ; then
+-	           chmod a+x ${UPDATE_TMP_DIR}/updater
+-	           ${UPDATE_TMP_DIR}/updater | tee -a $UPDATE_LOG
+-	           rm -rf ${UPDATE_TMP_DIR}
+-	       else
+-	           echo unzip return $? | tee $UPDATE_LOG
+-           fi
+-           kilall updateui
+-      fi
+-      rm -f $UPDATE_FILE_NAME
+-      rm -f /tmp/state.json
+-  elif [ -d ${UPDATE_TMP_DIR} ] ; then
+-      echo start updating again | tee $UPDATE_LOG
+-      updateui >> $UPDATE_LOG &
+-      chmod a+x ${UPDATE_TMP_DIR}/updater
+-      ${UPDATE_TMP_DIR}/updater | tee -a $UPDATE_LOG
+-      rm -f $UPDATE_FILE_NAME
+-      rm -rf ${UPDATE_TMP_DIR}
+-      rm -f /tmp/state.json
+-      kilall updateui
+-  else
+-      #exit 0
+-      a=`ps | grep dev/l | grep -v grep`                                                                             
+-      if [ "$a" == "" ] ; then                                                                                        
+-          init_lcd 1
+-      fi
+-
+-      echo 600000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+-
+-      svrrunned=0
+-      runsvr=`/customer/app/jsonval audiofix`        
+-      if [ $? -ne 0 ] ; then
+-          runsvr="1"
+-      fi
+-
+-      SDRUNNED=0
+-      if [ -d ${CUSTOMER_DIR} ]   ; then
+-        export LD_LIBRARY_PATH=/lib:/config/lib:${CUSTOMER_DIR}/lib 
+-        
+-        runifnecessary "keymon" ${CUSTOMER_DIR}/app/keymon
+-
+-        if [ "$runsvr" != "0" ] ; then
+-            runifnecessary "audioserver" ${CUSTOMER_DIR}/app/audioserver
+-            svrrunned=1
+-        fi
+-
+-        cd ${CUSTOMER_DIR}/app/
+-        if [ $svrrunned -eq 1 ] ; then
+-            LD_PRELOAD="${CUSTOMER_DIR}/lib/libpadsp.so" ./MainUI
+-        else
+-            echo svrrunned is ${svrrunned} 
+-            ./MainUI
+-        fi
+-
+-        if [ $? -eq 0 ] ; then
+-            SDRUNNED=1
+-        else
+-            SDRUNNED=0
+-        fi
+-      fi
+-      if [ ${SDRUNNED} -eq 0 ] ; then
+-        export LD_LIBRARY_PATH=/lib:/config/lib:/customer/lib
+-
+-        runifnecessary "keymon" keymon
+-
+-        if [ "$runsvr" != "0" ] ; then
+-            runifnecessary "audioserver" /customer/app/audioserver
+-            svrrunned=1
+-        fi
+-
+-        cd /customer/app/
+-        if [ $svrrunned -eq 1 ] ; then
+-            LD_PRELOAD="/customer/lib/libpadsp.so" ./MainUI
+-        else
+-            echo svrrunned is ${svrrunned}
+-            ./MainUI
+-        fi        
+-
+-      fi #[ ${SDRUNNED} -eq 0 ] 
+-
+-      runsvr=`/customer/app/jsonval audiofix`        
+-      if [ $? -ne 0 ] ; then
+-          runsvr="1"
+-      fi
+-      
+-      if [ -f /tmp/no_audioserver ] ; then
+-         echo kill audioserver
+-         kill -9 `pgrep audioserver`
+-      elif [ "$runsvr" != "0" ] ; then
+-         echo run audioserver
+-         if [ ${SDRUNNED} -eq 1 ] ; then
+-            runifnecessary "audioserver" ${CUSTOMER_DIR}/app/audioserver
+-         else
+-            runifnecessary "audioserver" /customer/app/audioserver
+-         fi
+-      fi
+-
+-      /customer/app/sysmon freemma      
+-      if [ -f /tmp/.cmdenc ] ; then                                                                                   
+-          /root/gameloader                                                                                             
+-      elif [ -f /tmp/cmd_to_run.sh ] ; then                                                                           
+-         chmod a+x /tmp/cmd_to_run.sh                                                                                 
+-         /tmp/cmd_to_run.sh                                                                                           
+-         rm /tmp/cmd_to_run.sh
+-	 echo game finished
+-      fi
+-      /customer/app/sysmon freemma 
+-
+-      rm /tmp/no_audioserver
+-
+-      #turn off motor in case app crash
+-      echo 48 > /sys/class/gpio/export
+-      echo out > /sys/class/gpio/gpio48/direction
+-      echo 1 > /sys/class/gpio/gpio48/value      
+-  fi
+-
+-done
+-
++#UPDATE_FILE_NAME=/tmp/.try_upgrade_file
++UPDATE_TMP_DIR=/mnt/SDCARD/.tmp_update
++#UPDATE_LOG=/mnt/SDCARD/update.log
++
++# Compatibility shim for MiniUI
++# XXX: needs to extract the update zip :/
++chmod a+x ${UPDATE_TMP_DIR}/updater
++exec ${UPDATE_TMP_DIR}/updater
++
++# while true; do
++# 	if [ -f $UPDATE_FILE_NAME ] ; then
++# 		upfile=`cat $UPDATE_FILE_NAME`
++# 		if [ -f ${upfile} ] ; then
++# 			echo start updating | tee $UPDATE_LOG
++# 			updateui >> $UPDATE_LOG &
++# 			notify 0 extracting package
++# 			mkdir -p ${UPDATE_TMP_DIR}
++# 			total=`unzip -l ${upfile} | wc -l`            
++# 			unzip -d ${UPDATE_TMP_DIR} ${upfile} | awk -v total="$total" -v out="/tmp/.update_msg" 'function bname(file,a,n){n=split(file,a,"/")
++# 			;return a[n]}BEGIN{cnt=0}{printf "">out;cnt+=1;printf "%d extract %s\n",cnt*100/total,bname($2)>>out;close(out)}'
++# 			if [ -f ${UPDATE_TMP_DIR}/updater ] ; then
++# 				chmod a+x ${UPDATE_TMP_DIR}/updater
++# 				${UPDATE_TMP_DIR}/updater | tee -a $UPDATE_LOG
++# 				rm -rf ${UPDATE_TMP_DIR}
++# 			else
++# 				echo unzip return $? | tee $UPDATE_LOG
++# 			fi
++# 			kilall updateui
++# 		fi
++# 		rm -f $UPDATE_FILE_NAME
++# 		rm -f /tmp/state.json
++# 	elif [ -d ${UPDATE_TMP_DIR} ] ; then
++# 		echo start updating again | tee $UPDATE_LOG
++# 		updateui >> $UPDATE_LOG &
++# 		chmod a+x ${UPDATE_TMP_DIR}/updater
++# 		${UPDATE_TMP_DIR}/updater | tee -a $UPDATE_LOG
++# 		rm -f $UPDATE_FILE_NAME
++# 		rm -rf ${UPDATE_TMP_DIR}
++# 		rm -f /tmp/state.json
++# 		kilall updateui
++# 	else
++# 		# XXX
++# 		echo "Nothing to do!"
++# 		sleep 5
++# 		exit 2
++# 	fi
++# done
+diff --git a/customer/demo.sh b/etc/init.d/modules.sh
+similarity index 97%
+rename from customer/demo.sh
+rename to etc/init.d/modules.sh
+index dd4f8a7..5979661 100755
+--- a/customer/demo.sh
++++ b/etc/init.d/modules.sh
+@@ -1,3 +1,6 @@
++#!/bin/sh
++. /etc/profile
++
+ insmod /config/modules/4.9.84/cifs.ko
+ insmod /config/modules/4.9.84/nls_utf8.ko
+ insmod /config/modules/4.9.84/grace.ko
+@@ -109,6 +112,3 @@ busybox mknod /dev/mi_poll c $major 0
+ insmod /config/modules/4.9.84/fbdev.ko
+ #misc_mod_list_late
+ mdev -s
+-export TERM=vt102
+-export TERMINFO=/config/terminfo
+-/customer/main &
+diff --git a/etc/init.d/rcS b/etc/init.d/rcS
+index 911203c..9b3f318 100755
+--- a/etc/init.d/rcS
++++ b/etc/init.d/rcS
+@@ -24,3 +24,5 @@ if [ -e /etc/core.sh ]; then
+     echo "|/etc/core.sh %p" > /proc/sys/kernel/core_pattern
+ 	chmod 777 /etc/core.sh
+ fi
++
++echo 3 > /proc/sys/kernel/printk
+diff --git a/etc/inittab b/etc/inittab
+index 7b12490..e531a7c 100755
+--- a/etc/inittab
++++ b/etc/inittab
+@@ -1,5 +1,12 @@
+ ::sysinit:/etc/init.d/rcS
++::sysinit:/etc/init.d/modules.sh
++
++# Login shell for serial
+ ::respawn:-/bin/sh
++
++# UI
++::respawn:/customer/main
++
+ # Stuff to do before rebooting
+ ::shutdown:/etc/init.d/rcK
+ #::shutdown:/bin/umount -a -r
+diff --git a/etc/profile b/etc/profile
+index f615623..2440fd5 100755
+--- a/etc/profile
++++ b/etc/profile
+@@ -3,11 +3,8 @@
+ export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+ export LD_LIBRARY_PATH=/lib
+ export PATH=$PATH:/config:/customer/app
++export TERM=vt102
+ export TERMINFO=/config/terminfo
+ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/config/lib:/customer/lib
+ 
+ ulimit -c unlimited
+-
+-if [ -e /customer/demo.sh ]; then
+-    /customer/demo.sh
+-fi
+-- 
+2.35.1
+
