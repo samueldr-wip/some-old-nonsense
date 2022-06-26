@@ -1,0 +1,65 @@
+From 2fdab586e8eac0ca58431f1d6332a95785d35dff Mon Sep 17 00:00:00 2001
+From: Samuel Dionne-Riel <samuel@dionne-riel.com>
+Date: Sat, 25 Jun 2022 22:59:39 -0400
+Subject: [PATCH] main: *somewhat* make a bit more user friendly...
+
+---
+ customer/main | 42 ++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 38 insertions(+), 4 deletions(-)
+
+diff --git a/customer/main b/customer/main
+index 37189b5..5fa528a 100755
+--- a/customer/main
++++ b/customer/main
+@@ -10,10 +10,44 @@ echo 12 > /sys/class/gpio/unexport
+ UPDATE_TMP_DIR=/mnt/SDCARD/.tmp_update
+ #UPDATE_LOG=/mnt/SDCARD/update.log
+ 
+-# Compatibility shim for MiniUI
+-# XXX: needs to extract the update zip :/
+-chmod a+x ${UPDATE_TMP_DIR}/updater
+-exec ${UPDATE_TMP_DIR}/updater
++run_compat_updater() {
++	echo ":: Attempting to launch updater script (stock firmware compatibility shim)"
++	# Compatibility shim for MiniUI
++	# XXX: needs to extract the update zip :/
++	if [ -e ${UPDATE_TMP_DIR}/updater ]; then
++		chmod a+x ${UPDATE_TMP_DIR}/updater
++		exec ${UPDATE_TMP_DIR}/updater
++	else
++		echo "Path '${UPDATE_TMP_DIR}/updater' not present... retrying..."
++	fi
++}
++
++# Try five times over 10 seconds, in case SD card is slow
++# Though I guess it's unlikely.
++for i in 1 2 3 4 5; do
++	run_compat_updater
++	sleep 2
++done
++
++# TODO: have a simple program to write to the display.
++
++echo "ERROR: Could not launch SD card UI..."
++
++# Signify that the SD card UI could not be found
++(
++cd /sys/class/gpio
++echo 48 > ./export
++cd gpio48
++echo out > direction
++for i in 1 2 3 4 5; do
++	echo 0 > value; sleep 0.5; echo 1 > value; sleep 0.2
++done
++)
++
++# `poweroff` hangs the system :/
++# But `reboot` powers off... ugh...
++reboot
++sleep 3600 # Just in case...
+ 
+ # while true; do
+ # 	if [ -f $UPDATE_FILE_NAME ] ; then
+-- 
+2.35.1
+
