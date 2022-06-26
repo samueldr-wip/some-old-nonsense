@@ -8,6 +8,9 @@ let
     finalRootfs = callPackage ./pkgs/final-rootfs {
       inherit (self) rootfs editSquashfs;
     };
+    firmwareUpgrade = callPackage ./pkgs/firmware-upgrade.nix {
+      rootfs = "${self.finalRootfs}/rootfs.img";
+    };
   };
 in
   self
