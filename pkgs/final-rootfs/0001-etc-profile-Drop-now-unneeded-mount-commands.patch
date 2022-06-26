@@ -1,0 +1,26 @@
+From 627ff0b8229df8bc5b5aefccf7930fd818023256 Mon Sep 17 00:00:00 2001
+From: Samuel Dionne-Riel <samuel@dionne-riel.com>
+Date: Sat, 25 Jun 2022 19:47:47 -0400
+Subject: [PATCH] etc/profile: Drop now unneeded mount commands
+
+---
+ etc/profile | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/etc/profile b/etc/profile
+index a672d4b..06a7c03 100755
+--- a/etc/profile
++++ b/etc/profile
+@@ -12,9 +12,6 @@ mount -t tmpfs mdev /dev
+ mount -t debugfs none /sys/kernel/debug/
+ mdev -s
+ mkdir -p /var/lock
+-mount -t squashfs /dev/mtdblock5 /config
+- mount -t squashfs /dev/mtdblock6 /customer
+- mount -t jffs2 mtd:appconfigs /appconfigs
+ 
+ mkdir -p /dev/pts
+ mount -t devpts devpts /dev/pts
+-- 
+2.35.1
+
