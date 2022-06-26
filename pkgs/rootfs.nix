@@ -54,6 +54,7 @@ identifier).
 , squashfsTools
 , ncdu
 , tree
+, fakeroot
 }:
 
 let
@@ -78,6 +79,7 @@ runCommandNoCC "miyoomini-combined-rootfs" {
     unzip
     ncdu
     tree
+    fakeroot
   ];
 } ''
   # Uses the updater script to create calls to the _extract function.
@@ -111,7 +113,7 @@ runCommandNoCC "miyoomini-combined-rootfs" {
 
   for f in *.img; do
     (PS4=" $ "; set -x
-    unsquashfs -quiet -no-xattrs -dest ''${f/.img/} "$f"
+    fakeroot unsquashfs -quiet -dest ''${f/.img/} "$f"
     )
   done
 
