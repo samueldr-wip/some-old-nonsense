@@ -1,0 +1,84 @@
+From fe44b1ee0c13b4eeb7430e1c3c9f9d6a0fa3379b Mon Sep 17 00:00:00 2001
+From: Samuel Dionne-Riel <samuel@dionne-riel.com>
+Date: Sun, 26 Jun 2022 02:58:58 -0400
+Subject: [PATCH] main: Cleanup and add compat for appconfigs
+
+---
+ customer/main | 53 ++++++++++-----------------------------------------
+ 1 file changed, 10 insertions(+), 43 deletions(-)
+
+diff --git a/customer/main b/customer/main
+index 5fa528a..ab8e476 100755
+--- a/customer/main
++++ b/customer/main
+@@ -6,14 +6,20 @@ tinymix set 6 103
+ 
+ echo 12 > /sys/class/gpio/unexport
+ 
+-#UPDATE_FILE_NAME=/tmp/.try_upgrade_file
+ UPDATE_TMP_DIR=/mnt/SDCARD/.tmp_update
+-#UPDATE_LOG=/mnt/SDCARD/update.log
++CUSTOMER_DIR=/mnt/SDCARD/miyoo/
+ 
++# Assume we need to support `/appconfigs`.
++# (Onion and vendor-like firmwares)
++if [ -e ${CUSTOMER_DIR}/app/MainUI ]; then
++	mkdir -p /mnt/SDCARD/.appconfigs
++fi
++
++# The updater path is used by CFWs like MiniUI to launch itself before any junk
++# from the vendor UI is launched.
+ run_compat_updater() {
+ 	echo ":: Attempting to launch updater script (stock firmware compatibility shim)"
+-	# Compatibility shim for MiniUI
+-	# XXX: needs to extract the update zip :/
++	# Compatibility shim for CFWs, including MiniUI
+ 	if [ -e ${UPDATE_TMP_DIR}/updater ]; then
+ 		chmod a+x ${UPDATE_TMP_DIR}/updater
+ 		exec ${UPDATE_TMP_DIR}/updater
+@@ -48,42 +54,3 @@ done
+ # But `reboot` powers off... ugh...
+ reboot
+ sleep 3600 # Just in case...
+-
+-# while true; do
+-# 	if [ -f $UPDATE_FILE_NAME ] ; then
+-# 		upfile=`cat $UPDATE_FILE_NAME`
+-# 		if [ -f ${upfile} ] ; then
+-# 			echo start updating | tee $UPDATE_LOG
+-# 			updateui >> $UPDATE_LOG &
+-# 			notify 0 extracting package
+-# 			mkdir -p ${UPDATE_TMP_DIR}
+-# 			total=`unzip -l ${upfile} | wc -l`            
+-# 			unzip -d ${UPDATE_TMP_DIR} ${upfile} | awk -v total="$total" -v out="/tmp/.update_msg" 'function bname(file,a,n){n=split(file,a,"/")
+-# 			;return a[n]}BEGIN{cnt=0}{printf "">out;cnt+=1;printf "%d extract %s\n",cnt*100/total,bname($2)>>out;close(out)}'
+-# 			if [ -f ${UPDATE_TMP_DIR}/updater ] ; then
+-# 				chmod a+x ${UPDATE_TMP_DIR}/updater
+-# 				${UPDATE_TMP_DIR}/updater | tee -a $UPDATE_LOG
+-# 				rm -rf ${UPDATE_TMP_DIR}
+-# 			else
+-# 				echo unzip return $? | tee $UPDATE_LOG
+-# 			fi
+-# 			kilall updateui
+-# 		fi
+-# 		rm -f $UPDATE_FILE_NAME
+-# 		rm -f /tmp/state.json
+-# 	elif [ -d ${UPDATE_TMP_DIR} ] ; then
+-# 		echo start updating again | tee $UPDATE_LOG
+-# 		updateui >> $UPDATE_LOG &
+-# 		chmod a+x ${UPDATE_TMP_DIR}/updater
+-# 		${UPDATE_TMP_DIR}/updater | tee -a $UPDATE_LOG
+-# 		rm -f $UPDATE_FILE_NAME
+-# 		rm -rf ${UPDATE_TMP_DIR}
+-# 		rm -f /tmp/state.json
+-# 		kilall updateui
+-# 	else
+-# 		# XXX
+-# 		echo "Nothing to do!"
+-# 		sleep 5
+-# 		exit 2
+-# 	fi
+-# done
+-- 
+2.35.1
+

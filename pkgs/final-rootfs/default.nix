@@ -13,9 +13,12 @@ editSquashfs "miyoo-mini-final-rootfs" "${rootfs}/rootfs.img" {} ''
   rm -r config/LCM
   rm -r config/wifi
 
+  ln -s /mnt/SDCARD/.appconfigs appconfigs
+
   patch -p1 < ${./0001-etc-profile-Drop-now-unneeded-mount-commands.patch}
   patch -p1 < ${./0002-misc-rework.patch}
   patch -p1 < ${./0001-main-somewhat-make-a-bit-more-user-friendly.patch}
   patch -p1 < ${./0001-modules-Drop-modules-not-present-in-vendor-image.patch}
+  patch -p1 < ${./0001-main-Cleanup-and-add-compat-for-appconfigs.patch}
   )
 ''
