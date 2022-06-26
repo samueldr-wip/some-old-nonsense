@@ -1,6 +1,7 @@
 { lib
 , runCommandNoCC
 , squashfsTools
+, fakeroot
 }:
 
 name: file: attrs: commands:
@@ -8,11 +9,12 @@ name: file: attrs: commands:
 runCommandNoCC name (attrs // {
   nativeBuildInputs = [
     squashfsTools
+    fakeroot
   ] ++ lib.optional (attrs ? nativeBuildInputs) attrs.nativeBuildInputs;
 }) ''
   (PS4=" $ "; set -x
   mkdir -p $out
-  unsquashfs -quiet -no-xattrs -dest fs "${file}"
+  fakeroot unsquashfs -quiet -dest fs "${file}"
   )
   (
   cd fs
