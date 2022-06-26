@@ -1,0 +1,43 @@
+From 0d4fdbd256375ce9ded6f98184cb0d7ae7416b38 Mon Sep 17 00:00:00 2001
+From: Samuel Dionne-Riel <samuel@dionne-riel.com>
+Date: Sat, 25 Jun 2022 22:44:33 -0400
+Subject: [PATCH] modules: Drop modules not present in vendor image
+
+---
+ etc/init.d/modules.sh | 11 -----------
+ 1 file changed, 11 deletions(-)
+
+diff --git a/etc/init.d/modules.sh b/etc/init.d/modules.sh
+index 5979661..bb0293c 100755
+--- a/etc/init.d/modules.sh
++++ b/etc/init.d/modules.sh
+@@ -1,13 +1,7 @@
+ #!/bin/sh
+ . /etc/profile
+ 
+-insmod /config/modules/4.9.84/cifs.ko
+ insmod /config/modules/4.9.84/nls_utf8.ko
+-insmod /config/modules/4.9.84/grace.ko
+-insmod /config/modules/4.9.84/sunrpc.ko
+-insmod /config/modules/4.9.84/lockd.ko
+-insmod /config/modules/4.9.84/nfs.ko
+-insmod /config/modules/4.9.84/nfsv2.ko
+ insmod /config/modules/4.9.84/mmc_core.ko
+ insmod /config/modules/4.9.84/mmc_block.ko
+ insmod /config/modules/4.9.84/kdrv_sdmmc.ko
+@@ -15,12 +9,7 @@ insmod /config/modules/4.9.84/fat.ko
+ insmod /config/modules/4.9.84/msdos.ko
+ insmod /config/modules/4.9.84/vfat.ko
+ insmod /config/modules/4.9.84/ntfs.ko
+-insmod /config/modules/4.9.84/usb-common.ko
+-insmod /config/modules/4.9.84/usbcore.ko
+ insmod /config/modules/4.9.84/ehci-hcd.ko
+-insmod /config/modules/4.9.84/scsi_mod.ko
+-insmod /config/modules/4.9.84/usb-storage.ko
+-insmod /config/modules/4.9.84/usbhid.ko
+ insmod /config/modules/4.9.84/sd_mod.ko
+ insmod /config/modules/4.9.84/mdrv_crypto.ko
+ #kernel_mod_list
+-- 
+2.35.1
+
