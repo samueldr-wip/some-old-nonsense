@@ -8,10 +8,10 @@ editSquashfs "miyoo-mini-final-rootfs" "${rootfs}/rootfs.img" {} ''
 
   rmdir appconfigs
 
-  rm etc/init.d/udhcpc.script
-
-  rm -r config/LCM
-  rm -r config/wifi
+  # Remove some weird stuff leftover
+  rm -vr config/{wifi,LCM}
+  rm -v etc/init.d/udhcpc.script customer/htop customer/kill_apps.sh
+  rmdir -v vendor
 
   ln -s /mnt/SDCARD/.appconfigs appconfigs
 
@@ -20,5 +20,6 @@ editSquashfs "miyoo-mini-final-rootfs" "${rootfs}/rootfs.img" {} ''
   patch -p1 < ${./0001-main-somewhat-make-a-bit-more-user-friendly.patch}
   patch -p1 < ${./0001-modules-Drop-modules-not-present-in-vendor-image.patch}
   patch -p1 < ${./0001-main-Cleanup-and-add-compat-for-appconfigs.patch}
+  patch -p1 < ${./0001-passwd-update-root-entry.patch}
   )
 ''

@@ -1,0 +1,20 @@
+From 959798f9c9a17e5e74e7846351acf4868f6da4ef Mon Sep 17 00:00:00 2001
+From: Samuel Dionne-Riel <samuel@dionne-riel.com>
+Date: Sun, 26 Jun 2022 03:08:40 -0400
+Subject: [PATCH] passwd: update root entry
+
+????
+---
+ etc/passwd | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/etc/passwd b/etc/passwd
+index bee6bc2..6ebdefd 100755
+--- a/etc/passwd
++++ b/etc/passwd
+@@ -1 +1 @@
+-root:qdGt8T0XjiWXI:0:0:Linux User,,,:/home/root:/bin/sh
++root::0:0:root,,,:/mnt/SDCARD:/bin/sh
+-- 
+2.35.1
+
