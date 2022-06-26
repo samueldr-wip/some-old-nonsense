@@ -1,6 +1,8 @@
 { lib
 , runCommandNoCC
 , squashfsTools
+, ncdu
+, tree
 , fakeroot
 }:
 
@@ -10,6 +12,8 @@ runCommandNoCC name (attrs // {
   nativeBuildInputs = [
     squashfsTools
     fakeroot
+    ncdu
+    tree
   ] ++ lib.optional (attrs ? nativeBuildInputs) attrs.nativeBuildInputs;
 }) ''
   (PS4=" $ "; set -x
@@ -24,4 +28,6 @@ runCommandNoCC name (attrs // {
   mksquashfs fs $out/"$(basename ${file})" -quiet -comp xz -b $(( 1024 * 1024 )) -Xdict-size 100% -all-root
   unsquashfs -quiet -lls $out/"$(basename ${file})" | sed -e 's/^squashfs-root//' > $out/rootfs.ls
   )
+  ncdu -0x -o $out/rootfs.ncdu ./fs
+  tree rootfs > $out/rootfs.tree
 ''
