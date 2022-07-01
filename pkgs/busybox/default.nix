@@ -83,6 +83,7 @@ FHSBuilder {
     CFLAGS+=(
       "-L${stdenv.cc.libc}/lib"
       "-L${gcc-unwrapped.lib}/lib"
+      "-Os"
     )
     LDFLAGS+=(
       "-L${stdenv.cc.libc}/lib"
