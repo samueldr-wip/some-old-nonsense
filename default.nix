@@ -2,6 +2,8 @@
 
 let
   inherit (pkgs) callPackage;
+  targetPkgs = pkgs.pkgsCross.armv7l-hf-multiplatform;
+
   self = {
     rootfs = callPackage ./pkgs/rootfs.nix {};
     editSquashfs = callPackage ./pkgs/edit-squashfs.nix {};
@@ -10,6 +12,9 @@ let
     };
     firmwareUpgrade = callPackage ./pkgs/firmware-upgrade.nix {
       rootfs = "${self.finalRootfs}/rootfs.img";
+    };
+    FHSBuilder = callPackage ./pkgs/fhsbuilder {
+      inherit targetPkgs;
     };
   };
 in
