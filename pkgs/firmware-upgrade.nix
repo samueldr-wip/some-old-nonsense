@@ -26,7 +26,7 @@ let
     "mtdparts=NOR_FLASH:0x00060000(BOOT)ro,0x00200000(KERNEL)ro,0x00010000(KEY_CUST)ro,0x00020000(LOGO),-(rootfs)"#,0x00370000(miservice),0x00770000(customer),0x000d0000(appconfigs)"
   ];
 
-  version = "20220625.001";
+  version = "20220630.001";
   payloadOffset = "0x4000";  # The vendor U-Boot will read 0x4000 bytes for the script.
   rootfsOffset = "0x290000"; # Partition offset
   rootfsSize =   "0xd70000"; # Partition size (subsuming following partitions)
