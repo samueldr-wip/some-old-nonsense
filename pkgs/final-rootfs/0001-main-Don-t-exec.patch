@@ -1,0 +1,50 @@
+From 5b53c261b64a17dd4c068a9ce9e1813dfc219b21 Mon Sep 17 00:00:00 2001
+From: Samuel Dionne-Riel <samuel@dionne-riel.com>
+Date: Sun, 26 Jun 2022 03:26:21 -0400
+Subject: [PATCH] main: Don't exec...
+
+... MiniUI will `exit 0` to launch the updater.
+
+... also rename function with `try_`
+---
+ customer/main | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/customer/main b/customer/main
+index 3654845..e4bbf2b 100755
+--- a/customer/main
++++ b/customer/main
+@@ -21,18 +21,18 @@ try_run_main_ui() {
+ 	if [ -d ${CUSTOMER_DIR} ]; then
+ 		export LD_LIBRARY_PATH=/lib:/config/lib:${CUSTOMER_DIR}/lib
+ 		cd ${CUSTOMER_DIR}/app/
+-		exec ./MainUI
++		./MainUI
+ 	fi
+ }
+ 
+ # The updater path is used by CFWs like MiniUI to launch itself before any junk
+ # from the vendor UI is launched.
+-run_compat_updater() {
++try_run_compat_updater() {
+ 	echo ":: Attempting to launch updater script (stock firmware compatibility shim)"
+ 	# Compatibility shim for CFWs, including MiniUI
+ 	if [ -e ${UPDATE_TMP_DIR}/updater ]; then
+ 		chmod a+x ${UPDATE_TMP_DIR}/updater
+-		exec ${UPDATE_TMP_DIR}/updater
++		${UPDATE_TMP_DIR}/updater
+ 	else
+ 		echo "Path '${UPDATE_TMP_DIR}/updater' not present... retrying..."
+ 	fi
+@@ -41,7 +41,7 @@ run_compat_updater() {
+ # Try five times over 10 seconds, in case SD card is slow
+ # Though I guess it's unlikely.
+ for i in 1 2 3 4 5; do
+-	run_compat_updater
++	try_run_compat_updater
+ 	try_run_main_ui
+ 	sleep 2
+ done
+-- 
+2.35.1
+

@@ -1,0 +1,41 @@
+From 1723cf31762ed132d97532df2daa51b908a6bdcc Mon Sep 17 00:00:00 2001
+From: Samuel Dionne-Riel <samuel@dionne-riel.com>
+Date: Sun, 26 Jun 2022 03:23:29 -0400
+Subject: [PATCH] main: Support just enough vendor MainUI launching for MiniUI
+
+---
+ customer/main | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/customer/main b/customer/main
+index ab8e476..3654845 100755
+--- a/customer/main
++++ b/customer/main
+@@ -15,6 +15,16 @@ if [ -e ${CUSTOMER_DIR}/app/MainUI ]; then
+ 	mkdir -p /mnt/SDCARD/.appconfigs
+ fi
+ 
++# This is the scheme used by the vendor UI.
++# This is a token effort only sufficient to load the MiniUI installer.
++try_run_main_ui() {
++	if [ -d ${CUSTOMER_DIR} ]; then
++		export LD_LIBRARY_PATH=/lib:/config/lib:${CUSTOMER_DIR}/lib
++		cd ${CUSTOMER_DIR}/app/
++		exec ./MainUI
++	fi
++}
++
+ # The updater path is used by CFWs like MiniUI to launch itself before any junk
+ # from the vendor UI is launched.
+ run_compat_updater() {
+@@ -32,6 +42,7 @@ run_compat_updater() {
+ # Though I guess it's unlikely.
+ for i in 1 2 3 4 5; do
+ 	run_compat_updater
++	try_run_main_ui
+ 	sleep 2
+ done
+ 
+-- 
+2.35.1
+

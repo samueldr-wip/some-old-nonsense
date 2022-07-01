@@ -21,5 +21,7 @@ editSquashfs "miyoo-mini-final-rootfs" "${rootfs}/rootfs.img" {} ''
   patch -p1 < ${./0001-modules-Drop-modules-not-present-in-vendor-image.patch}
   patch -p1 < ${./0001-main-Cleanup-and-add-compat-for-appconfigs.patch}
   patch -p1 < ${./0001-passwd-update-root-entry.patch}
+  patch -p1 < ${./0001-main-Support-just-enough-vendor-MainUI-launching-for.patch}
+  patch -p1 < ${./0001-main-Don-t-exec.patch}
   )
 ''
