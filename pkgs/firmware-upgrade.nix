@@ -5,7 +5,6 @@
 }:
 
 let
-  buzz = "gpio out 48 0; sleepms 100; gpio out 48 1; sleepms 150;";
   bootargs = lib.concatStringsSep " " [
     # Vendor boot args
     "console=ttyS0,115200"
@@ -46,25 +45,46 @@ let
     # Update boot args
     env set bootargs '${bootargs}'
 
+    # the next `env set` command needs to be less than 64 words long.
+    # So let's use `run` for buzzing about
+    env set buzz 'gpio out 48 0; sleepms 100; gpio out 48 1; sleepms 150'
+
     # Update boot command
     env set bootcmd '${
-      lib.concatStringsSep ";" [
-        # Vibrate to tell the user it's now okay to release the power button.
-        buzz
-        buzz
+      lib.concatStringsSep "; " [
+
+        # > force the mosfet that connects the battery to the system on.
+        #  — https://github.com/linux-chenxing/linux-chenxing.org/discussions/41#discussioncomment-3024610
+        #  — https://github.com/linux-chenxing/linux/blob/65c255cdc9e1e758558dd3ab7e39d565f9863e02/arch/arm/boot/dts/mstar-infinity2m-ssd202d-miyoo-mini.dts#L178
+        "gpio out 85 1"
 
         # Run the custom boot command (if present)
         "run mybootcmd"
 
+        # Vibrate to tell the user it's attempting the default boot sequence.
+        "run buzz"
+        "run buzz"
+
         # Vendor boot commands
-        "gpio output 85 1"
         "bootlogo 0 0 0 0 0"
+
+        # (Unclear what this does, present in vendor startup sequence)
         "mw 1f001cc0 11"
+
+        # (Unclear what this does, present in vendor startup sequence)
         "gpio out 8 0"
+
+        # Read the kernel from SPI Flash
         "sf probe 0"
         "sf read 0x22000000 \${sf_kernel_start} \${sf_kernel_size}"
+
+        # (Unclear what this does, present in vendor startup sequence)
         "gpio out 8 1"
-        "gpio output 4 1"
+
+        # Powers the backlight
+        "gpio out 4 1"
+
+        # Boots previously loaded kernel
         "bootm 0x22000000"
       ]
     }'
