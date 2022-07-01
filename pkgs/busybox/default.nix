@@ -72,7 +72,8 @@ let
   ];
 in
 FHSBuilder {
-  name = "busybox";
+  # NOTE: Vendor uses: BusyBox v1.20.2 (2019-06-02 23:36:03 HKT)
+  inherit (busybox) name;
 
   depsBuildBuild = [ buildPackages.stdenv.cc ];
 
