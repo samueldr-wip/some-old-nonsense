@@ -7,7 +7,69 @@
 }:
 
 let
-  inherit (lib) concatStringsSep;
+  inherit (lib)
+    concatStringsSep
+    concatMapStringsSep
+  ;
+
+  # Minimal way to handle **only** `=y` and "`=n`" configs.
+
+  enabled = [
+    "LZOPCAT"
+    "UNLZOP"
+  ];
+  disabled = [
+    "BB_ARCH" # for `arch`
+    "ASCII"
+    "BASE32"
+    "BC"
+    "BLKDISCARD"
+    "CRC32"
+    "DPKG"
+    "DPKG_DEB"
+    "FACTOR"
+    "FALLOCATE"
+    "FATATTR"
+    "FSFREEZE"
+    "FSTRIM"
+    "HEXEDIT"
+    "I2CDETECT"
+    "I2CDUMP"
+    "I2CGET"
+    "I2CSET"
+    "I2CTRANSFER"
+    "IPNEIGH"
+    "LINK"
+    "LSSCSI"
+    "MIM"
+    "NL"
+    "NOLOGIN"
+    "NPROC"
+    "NSENTER"
+    "PARTPROBE"
+    "PASTE"
+    "RESUME"
+    "RUN_INIT"
+    "SETFATTR"
+    "SETPRIV"
+    "SHA3SUM"
+    "SHRED"
+    "SHUF"
+    "SSL_CLIENT"
+    "SVC"
+    "SVOK"
+    "TASKSET"
+    "TC"
+    "TRUNCATE"
+    "TS"
+    "UBIRENAME"
+    "UDHCPC6"
+    "UEVENT"
+    "UNLINK"
+    "UNSHARE"
+    "W"
+    "XXD"
+  ];
 in
 FHSBuilder {
   name = "busybox";
@@ -36,36 +98,27 @@ FHSBuilder {
     tar xf ${busybox.src}
     cd busybox-*
     make defconfig
-    grep -v '${concatStringsSep ''\|'' [
-      "^CONFIG_CROSS_COMPILER_PREFIX="
-      "^CONFIG_PREFIX="
-      "^CONFIG_DPKG"
-      "CONFIG_UNLZOP[= ]"
-      "CONFIG_LZOPCAT[= ]"
-      "^CONFIG_XXD="
-      "^CONFIG_W="
-      "^CONFIG_UDHCPC6[= ]"
-      "^CONFIG_SSL_CLIENT[= ]"
-      "^CONFIG_UEVENT[= ]"
-    ]}' .config > tmp.config
+    grep -v '${concatStringsSep ''\|'' (
+        [
+          "^CONFIG_CROSS_COMPILER_PREFIX="
+          "^CONFIG_PREFIX="
+        ]
+        ++ (map (name: ''CONFIG_${name}[= ]'') (enabled ++ disabled))
+    )}' .config > tmp.config
     mv tmp.config .config
     cat <<EOF >> .config
     CONFIG_CROSS_COMPILER_PREFIX="${stdenv.cc.targetPrefix}"
     CONFIG_PREFIX="$out"
-    # CONFIG_DPKG is not set
-    # CONFIG_DPKG_DEB is not set
-    CONFIG_UNLZOP=y
-    CONFIG_LZOPCAT=y
-    # CONFIG_XXD is not set
-    # CONFIG_W is not set
-    # CONFIG_UDHCPC6 is not set
-    # CONFIG_SSL_CLIENT is not set
-    # CONFIG_UEVENT is not set
+    ${concatMapStringsSep "\n" (name: ''CONFIG_${name}=y'') enabled}
+    ${concatMapStringsSep "\n" (name: ''# CONFIG_${name} is not set'') disabled}
     EOF
-    #cat .config
+
+    # Normalize config
     make oldconfig
+
+    # Build and install
     make "''${makeFlags[@]}" install
-    mkdir -p $out
+
     cp -v .config $config
   '';
 }
