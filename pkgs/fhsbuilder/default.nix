@@ -38,6 +38,7 @@ in
 targetPkgs.callPackage (
   { stdenv
   , runCommandInFHSEnv
+  , file
   , gcc-unwrapped
   , binutils-unwrapped
   , bintools-unwrapped
@@ -53,8 +54,12 @@ targetPkgs.callPackage (
       gcc-unwrapped
       binutils-unwrapped
       bintools-unwrapped
+      file
     ] ++ lib.optional (args ? nativeBuildInputs) args.nativeBuildInputs;
   }) ''
+    is-dynamic() {
+      file "$1" | grep 'dynamically linked' > /dev/null
+    }
     fhs-interpreter() {
       echo "/$(patchelf --print-interpreter "$1" | cut -d '/' -f5-)"
     }
@@ -85,7 +90,7 @@ targetPkgs.callPackage (
 
     for bin in $out/{usr,}/{s,}bin/*; do
       # This needs to be done in two steps so the `--remove-rpath` doesn't leave inactive bogus non-rpath entries with nix store path refs.
-      if ! [ -L "$bin" ]; then
+      if ! [ -L "$bin" ] && is-dynamic "$bin"; then
         (PS4=" $ "; set -x
         patchelf --set-rpath "" "$bin"
         patchelf --remove-rpath --set-interpreter "$(fhs-interpreter "$bin")" "$bin"
@@ -96,7 +101,7 @@ targetPkgs.callPackage (
     echo ""
     echo ":: Looking for stray store paths ($NIX_STORE)"
     bogus=()
-    for bin in $out/{usr,}/{s,}bin/*; do
+    for bin in $out/{usr,}/{s,}bin/* $out/{usr,}/lib/*; do
       if ! [ -L "$bin" ]; then
         if (${stdenv.cc.targetPrefix}strings "$bin" | sort -u | grep "$NIX_STORE")>/dev/null; then
           bogus+=("$bin")
@@ -106,10 +111,8 @@ targetPkgs.callPackage (
     if [[ "$bogus" != "" ]]; then
       echo "   FATAL: store path references found in:"
       for bin in "''${bogus[@]}"; do
-        if ! [ -L "$bin" ]; then
-          echo "-> $bin\n"
-          ${stdenv.cc.targetPrefix}strings "$bin" | sort -u | grep "$NIX_STORE"
-        fi
+        echo "-> $bin\n"
+        ${stdenv.cc.targetPrefix}strings "$bin" | sort -u | grep "$NIX_STORE"
       done
 
       echo ""
