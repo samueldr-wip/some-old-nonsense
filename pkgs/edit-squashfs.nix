@@ -29,5 +29,5 @@ runCommandNoCC name (attrs // {
   unsquashfs -quiet -lls $out/"$(basename ${file})" | sed -e 's/^squashfs-root//' > $out/rootfs.ls
   )
   ncdu -0x -o $out/rootfs.ncdu ./fs
-  tree rootfs > $out/rootfs.tree
+  tree ./fs > $out/rootfs.tree
 ''
