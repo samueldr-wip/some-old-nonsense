@@ -83,9 +83,9 @@ targetPkgs.callPackage (
     echo ""
     echo ":: Un-nixifying build"
 
-    for bin in $out/bin/*; do
+    for bin in $out/{usr,}/{s,}bin/*; do
       # This needs to be done in two steps so the `--remove-rpath` doesn't leave inactive bogus non-rpath entries with nix store path refs.
-      if [ -f "$bin" ]; then
+      if ! [ -L "$bin" ]; then
         (PS4=" $ "; set -x
         patchelf --set-rpath "" "$bin"
         patchelf --remove-rpath --set-interpreter "$(fhs-interpreter "$bin")" "$bin"
@@ -96,16 +96,20 @@ targetPkgs.callPackage (
     echo ""
     echo ":: Looking for stray store paths ($NIX_STORE)"
     bogus=()
-    for bin in $out/bin/*; do
-      if ${stdenv.cc.targetPrefix}strings "$bin" | sort -u | grep -q "$NIX_STORE"; then
-        bogus+=("$bin")
+    for bin in $out/{usr,}/{s,}bin/*; do
+      if ! [ -L "$bin" ]; then
+        if (${stdenv.cc.targetPrefix}strings "$bin" | sort -u | grep "$NIX_STORE")>/dev/null; then
+          bogus+=("$bin")
+        fi
       fi
     done
     if [[ "$bogus" != "" ]]; then
       echo "   FATAL: store path references found in:"
       for bin in "''${bogus[@]}"; do
-        echo "-> $bin\n"
-        ${stdenv.cc.targetPrefix}strings "$bin" | sort -u | grep "$NIX_STORE"
+        if ! [ -L "$bin" ]; then
+          echo "-> $bin\n"
+          ${stdenv.cc.targetPrefix}strings "$bin" | sort -u | grep "$NIX_STORE"
+        fi
       done
 
       echo ""
