@@ -16,6 +16,9 @@ let
     FHSBuilder = callPackage ./pkgs/fhsbuilder {
       inherit targetPkgs;
     };
+    busybox = targetPkgs.callPackage ./pkgs/busybox {
+      inherit (self) FHSBuilder;
+    };
   };
 in
   self
