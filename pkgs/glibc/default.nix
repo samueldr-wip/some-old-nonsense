@@ -28,7 +28,8 @@ in
   buildCommands = ''
     configureFlags=(
       # Reminder: this targets FHS
-      --prefix "/usr"
+      --prefix "$out"
+      --sysconfdir=/etc
 
       # Cross
       --build=${stdenv.buildPlatform.config}
@@ -40,16 +41,22 @@ in
       --enable-bind-now
       --enable-stackguard-randomization
       --sysconfdir=/etc
+      --enable-kernel=3.2.0
       libc_cv_as_needed=no
     )
     CFLAGS+=(
       "-Os"
-      # Make new warnings not error out
       "-Wno-error=array-bounds"
+      # Make new warnings not error out
+
+      # GCC 10
       "-Wno-error=builtin-declaration-mismatch"
       "-Wno-error=missing-attributes"
       "-Wno-error=stringop-truncation"
       "-Wno-error=zero-length-bounds"
+
+      # GCC 4.9
+      "-Wno-error=maybe-uninitialized"
     )
     makeFlags=(
       -j$NIX_BUILD_CORES
@@ -59,6 +66,7 @@ in
       "CFLAGS=''${CFLAGS[*]}"
       "LDFLAGS=''${LDFLAGS[*]}"
       "V=1"
+      "BUILD_LDFLAGS=-Wl,-rpath,${stdenv.cc.libc}/lib"
     )
 
     tar xf "$src"
@@ -69,6 +77,10 @@ in
     # Needed for glibc to build with the gnumake 3.82
     # http://comments.gmane.org/gmane.linux.lfs.support/31227
     sed -i 's/ot \$/ot:\n\ttouch $@\n$/' manual/Makefile
+
+    # nscd needs libgcc, and we don't want it dynamically linked
+    # because we don't want it to depend on bootstrap-tools libs.
+    echo "LDFLAGS-nscd += -static-libgcc" >> nscd/Makefile
 
     sed -i s/-lgcc_eh//g "Makeconfig"
     cat > config.cache << "EOF"
@@ -87,15 +99,17 @@ in
 
     echo ":: Building"
     make "''${makeFlags[@]}"
-    make "''${makeFlags[@]}" install install_root="$out"
+    make "''${makeFlags[@]}" install sysconfdir=$out/etc # install_root="$out"
 
-    echo ":: Amending"
-    (
-      cd $out;
-      # Not needed
-      # ref: https://github.com/buildroot/buildroot/blob/da7b674d91e541fdde64cff9181d328562720026/package/glibc/glibc.mk#L160-L163
-      # Causes issues with absolute paths to the wrong libraries (since prefix is /).
-      rm usr/lib/libc.so
-    )
+    #echo ":: Amending"
+    #(
+    #  cd $out;
+    #  # Not needed
+    #  # ref: https://github.com/buildroot/buildroot/blob/da7b674d91e541fdde64cff9181d328562720026/package/glibc/glibc.mk#L160-L163
+    #  # Causes issues with absolute paths to the wrong libraries (since prefix is /).
+    #  rm usr/lib/libc.so
+    #)
   '';
+
+  failOnStore = false;
 }
