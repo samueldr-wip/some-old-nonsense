@@ -89,6 +89,4 @@ in
     make "''${makeFlags[@]}"
     make "''${makeFlags[@]}" install install_root="$out"
   '';
-
-  failOnStore = false;
 }
