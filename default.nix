@@ -15,6 +15,7 @@ let
     };
     FHSBuilder = callPackage ./pkgs/fhsbuilder {
       inherit targetPkgs;
+      libc = self.glibc;
     };
     busybox = targetPkgs.callPackage ./pkgs/busybox {
       inherit (self) FHSBuilder;

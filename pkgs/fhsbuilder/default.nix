@@ -1,6 +1,7 @@
 { lib
 , callPackage
 , targetPkgs
+, libc
 }:
 
 let
@@ -37,6 +38,7 @@ let
 in
 targetPkgs.callPackage (
   { stdenv
+  , lib
   , runCommandInFHSEnv
   , file
   , gcc-unwrapped
@@ -50,6 +52,7 @@ targetPkgs.callPackage (
   }@args:
 
   runCommandInFHSEnv name (args // {
+    failOnStore = args.failOnStore or 1;
     nativeBuildInputs = [
       gcc-unwrapped
       binutils-unwrapped
@@ -68,12 +71,18 @@ targetPkgs.callPackage (
 
     export CFLAGS
     CFLAGS+=(
-      $(cat ${stdenv.cc}/nix-support/libc-crt1-cflags)
+      ${lib.optionalString (libc != null) ''
+        "-B${libc}/lib/"
+        "-L${libc}/lib/"
+      ''}
       $(cat ${stdenv.cc}/nix-support/cc-ldflags)
     )
     export LDFLAGS
     LDFLAGS+=(
-      $(cat ${stdenv.cc}/nix-support/libc-crt1-cflags)
+      ${lib.optionalString (libc != null) ''
+        "-B${libc}/lib/"
+        "-L${libc}/lib/"
+      ''}
       $(cat ${stdenv.cc}/nix-support/cc-ldflags)
     )
 
