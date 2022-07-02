@@ -88,5 +88,14 @@ in
     echo ":: Building"
     make "''${makeFlags[@]}"
     make "''${makeFlags[@]}" install install_root="$out"
+
+    echo ":: Amending"
+    (
+      cd $out;
+      # Not needed
+      # ref: https://github.com/buildroot/buildroot/blob/da7b674d91e541fdde64cff9181d328562720026/package/glibc/glibc.mk#L160-L163
+      # Causes issues with absolute paths to the wrong libraries (since prefix is /).
+      rm usr/lib/libc.so
+    )
   '';
 }
