@@ -1,4 +1,5 @@
 { lib
+, pkgs
 , callPackage
 , targetPkgs
 , libc
@@ -41,7 +42,6 @@ targetPkgs.callPackage (
   , lib
   , runCommandInFHSEnv
   , file
-  , gcc-unwrapped
   , binutils-unwrapped
   , bintools-unwrapped
   }:
@@ -54,7 +54,7 @@ targetPkgs.callPackage (
   runCommandInFHSEnv name (args // {
     failOnStore = args.failOnStore or 1;
     nativeBuildInputs = [
-      gcc-unwrapped
+      stdenv.cc.cc
       binutils-unwrapped
       bintools-unwrapped
       file
@@ -72,18 +72,13 @@ targetPkgs.callPackage (
     export CFLAGS
     CFLAGS+=(
       ${lib.optionalString (libc != null) ''
-        "-B${libc}/usr/lib/"
-        "-L${libc}/usr/lib/"
-        "-L${libc}/lib/"
       ''}
       $(cat ${stdenv.cc}/nix-support/cc-ldflags)
     )
     export LDFLAGS
     LDFLAGS+=(
       ${lib.optionalString (libc != null) ''
-        "-B${libc}/usr/lib/"
-        "-L${libc}/usr/lib/"
-        "-L${libc}/lib/"
+        "-B${libc}/lib"
       ''}
       $(cat ${stdenv.cc}/nix-support/cc-ldflags)
     )
