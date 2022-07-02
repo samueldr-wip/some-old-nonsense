@@ -82,11 +82,9 @@ FHSBuilder {
 
   buildCommands = ''
     CFLAGS+=(
-      "-L${gcc-unwrapped.lib}/lib"
       "-Os"
     )
     LDFLAGS+=(
-      "-L${gcc-unwrapped.lib}/lib"
     )
     makeFlags=(
       -j$NIX_BUILD_CORES
