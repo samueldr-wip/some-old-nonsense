@@ -69,6 +69,7 @@ let
     "UNSHARE"
     "W"
     "XXD"
+    "FEATURE_NSLOOKUP_BIG"
   ];
 in
 FHSBuilder {
