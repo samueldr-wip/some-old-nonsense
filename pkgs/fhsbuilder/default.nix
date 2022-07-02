@@ -72,7 +72,8 @@ targetPkgs.callPackage (
     export CFLAGS
     CFLAGS+=(
       ${lib.optionalString (libc != null) ''
-        "-B${libc}/lib/"
+        "-B${libc}/usr/lib/"
+        "-L${libc}/usr/lib/"
         "-L${libc}/lib/"
       ''}
       $(cat ${stdenv.cc}/nix-support/cc-ldflags)
@@ -80,7 +81,8 @@ targetPkgs.callPackage (
     export LDFLAGS
     LDFLAGS+=(
       ${lib.optionalString (libc != null) ''
-        "-B${libc}/lib/"
+        "-B${libc}/usr/lib/"
+        "-L${libc}/usr/lib/"
         "-L${libc}/lib/"
       ''}
       $(cat ${stdenv.cc}/nix-support/cc-ldflags)
