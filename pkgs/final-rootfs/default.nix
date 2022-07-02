@@ -1,6 +1,7 @@
 { lib
 , rootfs
 , editSquashfs
+, pkgsCross
 }:
 
 editSquashfs "miyoo-mini-final-rootfs" "${rootfs}/rootfs.img" {} ''
@@ -23,5 +24,6 @@ editSquashfs "miyoo-mini-final-rootfs" "${rootfs}/rootfs.img" {} ''
   patch -p1 < ${./0001-passwd-update-root-entry.patch}
   patch -p1 < ${./0001-main-Support-just-enough-vendor-MainUI-launching-for.patch}
   patch -p1 < ${./0001-main-Don-t-exec.patch}
+  cat ${pkgsCross.armv7l-hf-multiplatform.pkgsStatic.busybox}/bin/busybox > bin/busybox
   )
 ''
