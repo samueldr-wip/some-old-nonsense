@@ -98,11 +98,22 @@ targetPkgs.callPackage (
     echo ":: Un-nixifying build"
 
     for bin in $out/{usr,}/{s,}bin/*; do
-      # This needs to be done in two steps so the `--remove-rpath` doesn't leave inactive bogus non-rpath entries with nix store path refs.
+      # Only "fix" dynamic binaries
       if ! [ -L "$bin" ] && is-dynamic "$bin"; then
+        # This needs to be done in two steps so the `--remove-rpath` doesn't leave inactive bogus non-rpath entries with nix store path refs.
         (PS4=" $ "; set -x
         patchelf --set-rpath "" "$bin"
         patchelf --remove-rpath --set-interpreter "$(fhs-interpreter "$bin")" "$bin"
+        )
+      fi
+    done
+    for lib in $out/{usr,}/lib/*; do
+      # Only "fix" dynamic libraries
+      if ! [ -L "$lib" ] && is-dynamic "$lib"; then
+        # This needs to be done in two steps so the `--remove-rpath` doesn't leave inactive bogus non-rpath entries with nix store path refs.
+        (PS4=" $ "; set -x
+        patchelf --set-rpath "" "$lib"
+        patchelf --remove-rpath "$lib"
         )
       fi
     done
@@ -111,6 +122,7 @@ targetPkgs.callPackage (
     echo ":: Looking for stray store paths ($NIX_STORE)"
     bogus=()
     for bin in $out/{usr,}/{s,}bin/* $out/{usr,}/lib/*; do
+      # Let's not list symlinks
       if ! [ -L "$bin" ]; then
         if (${stdenv.cc.targetPrefix}strings "$bin" | sort -u | grep "$NIX_STORE")>/dev/null; then
           bogus+=("$bin")
@@ -118,17 +130,24 @@ targetPkgs.callPackage (
       fi
     done
     if [[ "$bogus" != "" ]]; then
-      echo "   FATAL: store path references found in:"
+      if [[ "$failOnStore" == 1 ]]; then
+        echo "   FATAL: store path references found in:"
+      else
+        echo "   WARNING: store path references found in:"
+      fi
       for bin in "''${bogus[@]}"; do
-        echo "-> $bin\n"
+        echo "-> $bin"
         ${stdenv.cc.targetPrefix}strings "$bin" | sort -u | grep "$NIX_STORE"
       done
 
       echo ""
-      exit 1
+      if [[ "$failOnStore" == 1 ]]; then
+        exit 1
+      fi
+    else
+      echo "   Nothing found!"
+      echo ""
     fi
-    echo "   Nothing found!"
-    echo ""
   ''
 
 ) {
