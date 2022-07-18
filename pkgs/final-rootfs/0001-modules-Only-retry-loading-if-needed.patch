@@ -1,0 +1,28 @@
+From b2054548840eaa29cc6cc21386fcfbcf98fd6487 Mon Sep 17 00:00:00 2001
+From: Samuel Dionne-Riel <samuel@dionne-riel.com>
+Date: Mon, 18 Jul 2022 01:22:43 -0400
+Subject: [PATCH] modules: Only retry loading if needed
+
+---
+ etc/init.d/modules.sh | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/etc/init.d/modules.sh b/etc/init.d/modules.sh
+index bb0293c..c1ca18b 100755
+--- a/etc/init.d/modules.sh
++++ b/etc/init.d/modules.sh
+@@ -1,6 +1,11 @@
+ #!/bin/sh
+ . /etc/profile
+ 
++if lsmod | grep ^mi_gfx; then
++	echo "(!) Skipping modules loading, already been done."
++	exit 0
++fi
++
+ insmod /config/modules/4.9.84/nls_utf8.ko
+ insmod /config/modules/4.9.84/mmc_core.ko
+ insmod /config/modules/4.9.84/mmc_block.ko
+-- 
+2.35.1
+

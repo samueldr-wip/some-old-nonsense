@@ -1,0 +1,166 @@
+From 377745e999145e8bd7475345389b7136656954f1 Mon Sep 17 00:00:00 2001
+From: Samuel Dionne-Riel <samuel@dionne-riel.com>
+Date: Mon, 18 Jul 2022 00:25:05 -0400
+Subject: [PATCH] Mount gocfw userdata to SDCARD
+
+---
+ customer/main                  |   3 +
+ customer/mdev-script/autosd.sh | 122 +--------------------------------
+ etc/mdev.conf                  |   1 -
+ 3 files changed, 4 insertions(+), 122 deletions(-)
+
+diff --git a/customer/main b/customer/main
+index e4bbf2b..6d3eb52 100755
+--- a/customer/main
++++ b/customer/main
+@@ -38,6 +38,9 @@ try_run_compat_updater() {
+ 	fi
+ }
+ 
++mkdir -p /mnt/SDCARD
++mount -o bind /run/gocfw/userdata/ /mnt/SDCARD
++
+ # Try five times over 10 seconds, in case SD card is slow
+ # Though I guess it's unlikely.
+ for i in 1 2 3 4 5; do
+diff --git a/customer/mdev-script/autosd.sh b/customer/mdev-script/autosd.sh
+index 2b07134..296ef78 100755
+--- a/customer/mdev-script/autosd.sh
++++ b/customer/mdev-script/autosd.sh
+@@ -1,123 +1,3 @@
+ #!/bin/sh
+ 
+-MNT_PATH=/mnt
+-
+-SD1_DIR=SDCARD
+-MNT_DIR=$SD1_DIR
+-
+-
+-my_umount()
+-{
+-	FOLDER=`grep "/dev/$1" /proc/mounts | cut -d ' ' -f 2`
+-	if [ ! -z "$FOLDER" ]; then
+-		umount -l "$FOLDER";
+-	fi
+-}
+-
+-my_mount()
+-{
+-	MNT_DIR=$SD1_DIR
+-
+-	if [ -b /dev/$1 ]; then
+-		MOUNTDEV="/dev/$1"
+-		if [ -b "/dev/$1p1" ]; then
+-			MOUNTDEV="/dev/$1p1"
+-		fi
+-	fi
+-
+-	time_offset_sig=`date +%z | cut -c 1`
+-	time_offset_h=`date +%z | cut -c 2-3`
+-	time_offset_m=`date +%z | cut -c 4-5`
+-	time_offset=`expr $local_time - $utc_time`
+-	if [ $time_offset_sig == + ]; then
+-		time_offset_sig="";
+-	fi
+-	time_offset_total_m=$time_offset_sig`expr $time_offset_h \* 60 + $time_offset_m`
+-
+-        #/customer/app/fsck.vfat -a "$MOUNTDEV"
+-	#fat_type=`blkid "$MOUNTDEV" | awk -F'TYPE=' '{print $NF}'`
+-	#[ "${fat_type}" == "\"vfat\"" ] || ! [ "${fat_type}" == "\"exfat\"" ] 
+-    
+-        mount -t vfat -o iocharset=utf8,dirsync,time_offset=$time_offset_total_m "$MOUNTDEV" "${MNT_PATH}/${MNT_DIR}"
+-        RET="$?"
+-        if [ $RET != "0" ] ; then
+-            echo "mount fail!"
+-            echo "mount: mounting $MOUNTDEV on ${MNT_PATH}/${MNT_DIR} fail" >> /tmp/.mount.log
+-            echo "$MOUNTDEV $MNT_PATH/$MNT_DIR ignore defaults 0 0" >> /tmp/.mount.log
+-            exit 1
+-        fi
+-}
+-
+-touch /tmp/.mount.log
+-
+-if ! [ -e "${MNT_PATH}/${MNT_DIR}" ] ; then
+-     echo "${MNT_PATH}/${MNT_DIR} not exists" >> /tmp/.mount.log
+-     exit 1
+-fi 
+-
+-if [ -z $DEVPATH ]; then
+-	echo autosd.sh bootstage $ACTION "$DEVPATH" >> /tmp/.mount.log
+-
+-	MMCBUSPATH="/sys/bus/mmc/devices/"
+-	MMCDEVLIST=`ls $MMCBUSPATH`
+-
+-	for n in $MMCDEVLIST
+-	do
+-		# Check if it is not SD device
+-		SD_TYPE=`cat $MMCBUSPATH/$n/type`
+-		if ! [ $SD_TYPE == SD ]; then
+-			continue
+-		fi
+-
+-		# Get the block device name
+-		BLOCKDEV=`ls $MMCBUSPATH/$n/block`
+-		# Check if device is mounted
+-		MOUNTED=`grep $BLOCKDEV /proc/mounts`
+-
+-
+-		# Check if /dev/mmcblk* exists
+-		if [ -b /dev/$BLOCKDEV ]; then
+-			MOUNTDEV="/dev/$BLOCKDEV"
+-			if [ -b "/dev/${BLOCKDEV}p1" ]; then
+-				MOUNTDEV="/dev/${BLOCKDEV}p1"
+-			fi
+-		else
+-			continue
+-		fi
+-
+-		time_offset_sig=`date +%z | cut -c 1`
+-		time_offset_h=`date +%z | cut -c 2-3`
+-		time_offset_m=`date +%z | cut -c 4-5`
+-		time_offset=`expr $local_time - $utc_time`
+-		if [ $time_offset_sig == + ]; then
+-			time_offset_sig="";
+-		fi
+-		time_offset_total_m=$time_offset_sig`expr $time_offset_h \* 60 + $time_offset_m`
+-
+-		#fat_type=`blkid "$MOUNTDEV" | awk -F'TYPE=' '{print $NF}' | awk -F ' ' '{print $1}'`
+-		#[ "${fat_type}" == "\"vfat\"" ] || ! [ "${fat_type}" == "\"exfat\"" ] 
+-
+-		mount -t vfat -o iocharset=utf8,dirsync,time_offset=$time_offset_total_m "$MOUNTDEV" "${MNT_PATH}/${MNT_DIR}"
+-		RET="$?"
+-		if [ $RET != "0" ] ; then
+-		    echo "mount fail!"
+-		    echo "mount: mounting $MOUNTDEV on ${MNT_PATH}/${MNT_DIR} fail" >> /tmp/.mount.log
+-		    echo "$MOUNTDEV $MNT_PATH/$MNT_DIR ignore defaults 0 0" >> /tmp/.mount.log
+-		    exit 1
+-		fi
+-
+-	done
+-
+-else
+-	echo autosd.sh bootedup $ACTION $MDEV , "$DEVPATH" >> /tmp/.mount.log
+-	# This is for booted up stage
+-	case "${ACTION}" in
+-	add|"")
+-		my_umount ${MDEV}
+-		my_mount ${MDEV}
+-		;;
+-	remove)
+-		my_umount ${MDEV}
+-		;;
+-	esac
+-fi
++true
+diff --git a/etc/mdev.conf b/etc/mdev.conf
+index 5789129..44e514f 100644
+--- a/etc/mdev.conf
++++ b/etc/mdev.conf
+@@ -5,4 +5,3 @@ pcm.* 0:0 0660 =snd/
+ control.* 0:0 0660 =snd/
+ timer 0:0 0660 =snd/
+ $DEVNAME=bus/usb/([0-9]+)/([0-9]+) 0:0 0660 =bus/usb/%1/%2
+-mmcblk[0-2]p* root:root 660 */customer/mdev-script/autosd.sh
+-- 
+2.35.1
+

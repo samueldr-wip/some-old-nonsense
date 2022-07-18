@@ -2,8 +2,15 @@
 , rootfs
 , editSquashfs
 , pkgsCross
+, writeScript
 }:
 
+let
+  init = writeScript "init" ''
+    #!/bin/sh
+    exec /linuxrc "$@"
+  '';
+in
 editSquashfs "miyoo-mini-final-rootfs" "${rootfs}/rootfs.img" {} ''
   (PS4=" $ "; set -x
 
@@ -24,6 +31,12 @@ editSquashfs "miyoo-mini-final-rootfs" "${rootfs}/rootfs.img" {} ''
   patch -p1 < ${./0001-passwd-update-root-entry.patch}
   patch -p1 < ${./0001-main-Support-just-enough-vendor-MainUI-launching-for.patch}
   patch -p1 < ${./0001-main-Don-t-exec.patch}
+  patch -p1 < ${./0001-Mount-gocfw-userdata-to-SDCARD.patch}
+  patch -p1 < ${./0001-modules-Only-retry-loading-if-needed.patch}
+  patch -p1 < ${./0001-mount-Don-t-overwrite-devtmpfs.patch}
   cat ${pkgsCross.armv7l-hf-multiplatform.pkgsStatic.busybox}/bin/busybox > bin/busybox
+  cp ${init} init
+  mkdir run
+  mkdir vendor
   )
 ''
