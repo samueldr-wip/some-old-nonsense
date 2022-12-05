@@ -28,4 +28,4 @@ let
     };
   };
 in
-  self
+  self.finalRootfs // { pkgs = self; }
