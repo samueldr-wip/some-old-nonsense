@@ -1,5 +1,5 @@
 { lib
-, runCommandNoCC
+, runCommand
 , buildPackages
 , writeScript
 , squashfsTools
@@ -29,7 +29,7 @@ let
     exec "${entrypoint}" "$@"
   '';
 in
-runCommandNoCC name {
+runCommand name {
   inherit name;
   blockSize = 1024 * 1024;
   nativeBuildInputs = [
