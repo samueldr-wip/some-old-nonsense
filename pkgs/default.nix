@@ -6,4 +6,5 @@ let
   ;
 in
 {
+  SDL = callPackage ./SDL { inherit (pkgs) SDL; };
 }
