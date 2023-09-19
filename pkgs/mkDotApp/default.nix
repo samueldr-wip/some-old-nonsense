@@ -2,6 +2,9 @@
 , runCommand
 , buildPackages
 , writeScript
+, libfaketime
+, e2fsprogs
+, fakeroot
 , squashfsTools
 , busybox
 }:
@@ -34,11 +37,14 @@ runCommand name {
   blockSize = 1024 * 1024;
   nativeBuildInputs = [
     squashfsTools
+    libfaketime
+    e2fsprogs.bin
+    fakeroot
   ];
   closureInfo = buildPackages.closureInfo { rootPaths = paths ++ [ runner ]; };
   compression = "xz";
   compressionParams = "-Xdict-size 100%";
-} ''
+} /*''
   _mksquashfs() {
     mksquashfs \
     "$@" \
@@ -70,5 +76,44 @@ runCommand name {
   # This means hidden files are added too
   GLOBIGNORE=".:.."
   _mksquashfs * "$out/$name.app"
+  )
+''*/
+# Temporarily use an ext4 container for testing on RG35XX vendor kernel...
+''
+  img="$out/$name.app"
+  mkdir -p $out
+
+  (
+  # Activates dotglob, ignoring . and ..
+  # This means hidden files are added too
+  GLOBIGNORE=".:.."
+  shopt -u dotglob
+
+  mkdir -p fs
+  cd fs
+
+  # Copy closure
+  mkdir -p ./nix/store/
+  xargs -I % cp -a --reflink=auto % -t ./nix/store/ < $closureInfo/store-paths
+
+  # The runner
+  ln -s ${runner} .entrypoint
+
+  # Required by POSIX
+  mkdir bin
+  ln -s ${busybox}/bin/sh bin/sh
+
+  mkdir dev proc sys mnt var tmp
+
+  # Make a crude approximation of the size of the target image.
+  # If the script starts failing, increase the fudge factors here.
+  numInodes=$(find ./ | wc -l)
+  numDataBlocks=$(du -s -c -B 4096 --apparent-size ./ | tail -1 | awk '{ print int($1 * 1.10) }')
+  bytes=$((2 * 4096 * $numInodes + 4096 * $numDataBlocks))
+  echo "Creating an EXT4 image of $bytes bytes (numInodes=$numInodes, numDataBlocks=$numDataBlocks)"
+
+  truncate -s $bytes $img
+
+  faketime -f "1970-01-01 00:00:01" fakeroot mkfs.ext4 -L "$name.app" -U "44444444-4444-4444-8888-101010101010" -d ./ $img
   )
 ''
