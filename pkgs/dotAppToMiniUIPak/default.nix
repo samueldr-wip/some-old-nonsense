@@ -10,14 +10,14 @@
 let
   inherit (lib) optionalString;
 
-  squashfs_ko = callPackage ./squashfs_ko.nix rec {
-    linux = pkgs.linux_4_19.override { inherit stdenv; };
-    stdenv = pkgs.gcc49Stdenv;
-  };
-  loop_ko = callPackage ./loop_ko.nix rec {
-    linux = pkgs.linux_4_9.override { inherit stdenv; };
-    stdenv = pkgs.gcc8Stdenv;
-  };
+  #squashfs_ko = callPackage ./squashfs_ko.nix rec {
+  #  linux = pkgs.linux_4_19.override { inherit stdenv; };
+  #  stdenv = pkgs.gcc49Stdenv;
+  #};
+  #loop_ko = callPackage ./loop_ko.nix rec {
+  #  linux = pkgs.linux_4_9.override { inherit stdenv; };
+  #  stdenv = pkgs.gcc8Stdenv;
+  #};
 in
 
 { app }:
@@ -27,9 +27,17 @@ let
   launcher = writeScript "${app.name}-launch.sh" ''
     #!/bin/sh
 
+    _blank() {
+      echo ""
+      echo ""
+      echo ""
+      # TODO: blanking :/
+    }
+
     _say() {
-      say "$@"
       echo ":: $@"
+      # TODO: say
+      # say "$@"
     }
 
     ${optionalString debug "set -x"}
@@ -43,35 +51,36 @@ let
     printf ":: $app launch at: "
     date +%H:%M:%S.%3N
 
-    blank
+    _blank
     _say "Preparing $app..."
 
     # This may fail if already inserted, it's fine.
     insmod "$containing_dir/loop.ko"
 
     mkdir -p "$mountpoint"
-    mount -t squashfs -o loop "$containing_dir/$app" "$mountpoint"
-    for d in dev proc sys tmp var mnt mnt/SDCARD; do
+    mount -t ext4 -o loop,ro "$containing_dir/$app" "$mountpoint"
+    for d in dev proc sys tmp var mnt mnt/sdcard; do
       mount -o bind "/$d" "$mountpoint/$d"
     done
 
-    blank
+    _blank
     _say "Launching $app..."
     printf "   at: "
     date +%H:%M:%S.%3N
 
     # Launch with a neutered environment.
     # It's assumed we don't want any of the vendor things leaking in.
-    env -i "HOME=$USERDATA_PATH" $(which chroot) "$mountpoint" /.entrypoint "$@"
+    # XXX provide expected "platform-specific" environment!
+    env -i SDL_NOMOUSE=1 "HOME=$USERDATA_PATH" $(which chroot) "$mountpoint" /.entrypoint "$@"
 
-    blank
+    _blank
     _say "Cleaning-up $app..."
     printf "   at: "
     date +%H:%M:%S.%3N
 
     # Cleanup after execution
     # NOTE: there is no handling for any child processes.
-    for d in dev proc sys tmp var mnt/SDCARD mnt; do
+    for d in dev proc sys tmp var mnt/sdcard mnt; do
       umount -f "$mountpoint/$d"
     done
     umount -df "$mountpoint"
@@ -89,15 +98,15 @@ runCommandNoCC "${app.name}-pak" {
   inherit app;
   inherit (app) name;
   #inherit loop_ko;
-  inherit squashfs_ko;
+  #inherit squashfs_ko;
 } ''
   dir="$out/$name.pak"
   mkdir -vp "$dir"
   cp -v "$app/$name.app" "$dir"
   ${""
   #cp -v "${loop_ko}"/lib/modules/*/extra/loop.ko "$dir"
+  #cp -v "${squashfs_ko}"/lib/modules/*/extra/squashfs.ko "$dir"
   }
-  cp -v "${squashfs_ko}"/lib/modules/*/extra/squashfs.ko "$dir"
   cp -v "${launcher}" "$dir"/launch.sh
   cp -v "${m3u}" "$dir/$name.pak.m3u"
 ''
