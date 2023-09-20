@@ -9,15 +9,6 @@
 
 let
   inherit (lib) optionalString;
-
-  #squashfs_ko = callPackage ./squashfs_ko.nix rec {
-  #  linux = pkgs.linux_4_19.override { inherit stdenv; };
-  #  stdenv = pkgs.gcc49Stdenv;
-  #};
-  #loop_ko = callPackage ./loop_ko.nix rec {
-  #  linux = pkgs.linux_4_9.override { inherit stdenv; };
-  #  stdenv = pkgs.gcc8Stdenv;
-  #};
 in
 
 { app }:
@@ -54,9 +45,6 @@ let
     _blank
     _say "Preparing $app..."
 
-    # This may fail if already inserted, it's fine.
-    insmod "$containing_dir/loop.ko"
-
     mkdir -p "$mountpoint"
     mount -t ext4 -o loop,ro "$containing_dir/$app" "$mountpoint"
     for d in dev proc sys tmp var mnt mnt/sdcard; do
@@ -67,6 +55,9 @@ let
     _say "Launching $app..."
     printf "   at: "
     date +%H:%M:%S.%3N
+
+    export USERDATA_PATH="/mnt/sdcard/_userdata/"
+    mkdir -p $USERDATA_PATH
 
     # Launch with a neutered environment.
     # It's assumed we don't want any of the vendor things leaking in.
@@ -97,16 +88,10 @@ in
 runCommandNoCC "${app.name}-pak" {
   inherit app;
   inherit (app) name;
-  #inherit loop_ko;
-  #inherit squashfs_ko;
 } ''
   dir="$out/$name.pak"
   mkdir -vp "$dir"
   cp -v "$app/$name.app" "$dir"
-  ${""
-  #cp -v "${loop_ko}"/lib/modules/*/extra/loop.ko "$dir"
-  #cp -v "${squashfs_ko}"/lib/modules/*/extra/squashfs.ko "$dir"
-  }
   cp -v "${launcher}" "$dir"/launch.sh
   cp -v "${m3u}" "$dir/$name.pak.m3u"
 ''
