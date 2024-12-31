@@ -18,4 +18,11 @@ let
       set.extend
   ;
 in
+(
 pkgsSet (import ./pkgs)
+).extend (
+  final: super: {}
+  # XXX RG35XX stuff here
+  # XXX or really, device-specific...
+  # SDL = ...
+)
